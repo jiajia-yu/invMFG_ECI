@@ -111,145 +111,221 @@ rho_init = repmat(rho0,1,ntp);
 q_init = f_qinit(xgrid);
 
 %% inverse equilibrium correction iteration (ECI)
+% flag_cvg = false;
+% 
+% opts.Nit = 100;
+% if isfield(opts,'rho_num')rmfield(opts,'rho_num'); end
+% if isfield(opts,'v_num')rmfield(opts,'v_num'); end
+% 
+% Nit = 100;
+% q_nm1_eci = q_init;
+% % rho_nm1_eci = rho_init;
+% 
+% q_hist_eci = zeros(nxp,Nit);
+% nits_eci = zeros(Nit+1,1);
+% gaps_eci = zeros(Nit,1);
+% errs_l2_eci = zeros(Nit+1,1);
+% ress_l2_eci = zeros(Nit,1);
+% 
+% err_nm1_eci = q_tru - q_nm1_eci;
+% err_nm1_l2_eci = norm_sp(err_nm1_eci)/q_tru_norm_sp;
+% errs_l2_eci(1) = err_nm1_l2_eci;
+% 
+% disp('ECI iter 0')
+% disp(['  initial: q rel err = ',num2str(err_nm1_l2_eci)])
+% 
+% for nit = 1:Nit
+%     % update rho, phi through ficplay
+%     f_f = @(x,t,rho) q_nm1_eci + f_frho(x,t,rho);
+%     [rho_n_eci,phi_n_eci,outs_n_eci] ...
+%     = ficplay1d_lf(vis,gamma,f_f,f_g,f_rho0,opts);
+% 
+%     opts.rho_num = rho_n_eci;
+%     opts.v_num = outs_n_eci.v_num;
+% 
+%     phi0_n_eci = phi_n_eci(:,1);
+%     gdphi_n_eci = op_grd(phi_n_eci);
+%     term0_phi_n_eci = -vis*op_lap(phi0_n_eci) + func_H(gdphi_n_eci(:,1)) ...
+%                   + sum(phi0_n_eci)*cst_int;
+% 
+%     % update q    
+%     res_phi_eci = term0_phi - term0_phi_n_eci;
+%     q_n_eci = q_nm1_eci + res_phi_eci;
+% 
+%     % record residue, error, number of iteration in ficplay
+%     nits_eci(nit+1) = nits_eci(nit) + length(outs_n_eci.gaps_dual)+1;
+%     gaps_eci(nit) = outs_n_eci.gaps_dual(end);
+%     ress_l2_eci(nit) = norm_sp(phi0_n_eci-phi0)/phi0_norm_sp;
+% 
+%     err_n_eci = q_tru - q_n_eci;
+%     err_n_l2_eci = norm_sp(err_n_eci)/q_tru_norm_sp;
+%     errs_l2_eci(nit+1) = err_n_l2_eci;
+% 
+%     % update index
+%     q_nm1_eci = q_n_eci;
+%     % rho_nm1_eci = rho_n_eci;
+%     err_nm1_eci = err_n_eci;
+% 
+%     q_hist_eci(:,nit) = q_n_eci;
+% 
+%     if ress_l2_eci(nit) < tol
+%         flag_cvg = true;
+%         q_hist_eci = q_hist_eci(:,1:nit);
+%         nits_eci = nits_eci(1:nit+1);
+%         gaps_eci = gaps_eci(1:nit);
+%         ress_l2_eci = ress_l2_eci(1:nit);
+%         errs_l2_eci = errs_l2_eci(1:nit+1);
+%         disp(['ECI converges at ',num2str(nit),'-th iteration'])
+%         break
+%     end
+% 
+% end
+% 
+% if ~flag_cvg
+%     disp(['ECI finishes at ',num2str(nit),'-th iteration'])
+% end
+
+%% inverse best response iteration (BRI, nit = 1)
 flag_cvg = false;
 
-opts.Nit = 100;
-if isfield(opts,'rho_num') opts = rmfield(opts,'rho_num'); end
-if isfield(opts,'v_num') opts = rmfield(opts,'v_num'); end
+opts.Nit = 1;
+opts.step = @(nit) 0.2;
+if isfield(opts,'rho_num')opts = rmfield(opts,'rho_num'); end
+if isfield(opts,'v_num')opts = rmfield(opts,'v_num'); end
 
 Nit = 100;
-q_nm1_eci = q_init;
-% rho_nm1_eci = rho_init;
+q_nm1_bri1_ss2 = q_init;
+% rho_nm1_bri1_ss2 = rho_init;
 
-q_hist_eci = zeros(nxp,Nit);
-nits_eci = zeros(Nit+1,1);
-gaps_eci = zeros(Nit,1);
-errs_l2_eci = zeros(Nit+1,1);
-ress_l2_eci = zeros(Nit,1);
+q_hist_bri1_ss2 = zeros(nxp,Nit);
+nits_bri1_ss2 = zeros(Nit+1,1);
+gaps_bri1_ss2 = zeros(Nit,1);
+errs_l2_bri1_ss2 = zeros(Nit+1,1);
+ress_l2_bri1_ss2 = zeros(Nit,1);
 
-err_nm1_eci = q_tru - q_nm1_eci;
-err_nm1_l2_eci = norm_sp(err_nm1_eci)/q_tru_norm_sp;
-errs_l2_eci(1) = err_nm1_l2_eci;
+err_nm1_bri1_ss2 = q_tru - q_nm1_bri1_ss2;
+err_nm1_l2_bri1_ss2 = norm_sp(err_nm1_bri1_ss2)/q_tru_norm_sp;
+errs_l2_bri1_ss2(1) = err_nm1_l2_bri1_ss2;
 
-disp('ECI iter 0')
-disp(['  initial: q rel err = ',num2str(err_nm1_l2_eci)])
+disp('BRI1 iter 0')
+disp(['  initial: q rel err = ',num2str(err_nm1_l2_bri1_ss2)])
 
 for nit = 1:Nit
     % update rho, phi through ficplay
-    f_f = @(x,t,rho) q_nm1_eci + f_frho(x,t,rho);
-    [rho_n_eci,phi_n_eci,outs_n_eci] ...
+    f_f = @(x,t,rho) q_nm1_bri1_ss2 + f_frho(x,t,rho);
+    [rho_n_bri1_ss2,phi_n_bri1_ss2,outs_n_bri1_ss2] ...
     = ficplay1d_lf(vis,gamma,f_f,f_g,f_rho0,opts);
 
-    opts.rho_num = rho_n_eci;
-    opts.v_num = outs_n_eci.v_num;
+    opts.rho_num = rho_n_bri1_ss2;
+    opts.v_num = outs_n_bri1_ss2.v_num;
 
-    phi0_n_eci = phi_n_eci(:,1);
-    gdphi_n_eci = op_grd(phi_n_eci);
-    term0_phi_n_eci = -vis*op_lap(phi0_n_eci) + func_H(gdphi_n_eci(:,1)) ...
-                  + sum(phi0_n_eci)*cst_int;
+    phi0_n_bri1_ss2 = phi_n_bri1_ss2(:,1);
+    gdphi_n_bri1_ss2 = op_grd(phi_n_bri1_ss2);
+    term0_phi_n_bri1_ss2 = -vis*op_lap(phi0_n_bri1_ss2) + func_H(gdphi_n_bri1_ss2(:,1)) ...
+                  + sum(phi0_n_bri1_ss2)*cst_int;
 
     % update q    
-    res_phi_eci = term0_phi - term0_phi_n_eci;
-    q_n_eci = q_nm1_eci + res_phi_eci;
+    res_phi_bri1_ss2 = term0_phi - term0_phi_n_bri1_ss2;
+    q_n_bri1_ss2 = q_nm1_bri1_ss2 + res_phi_bri1_ss2;
 
     % record residue, error, number of iteration in ficplay
-    nits_eci(nit+1) = nits_eci(nit) + length(outs_n_eci.gaps_dual)+1;
-    gaps_eci(nit) = outs_n_eci.gaps_dual(end);
-    ress_l2_eci(nit) = norm_sp(phi0_n_eci-phi0)/phi0_norm_sp;
+    % nits_bri1_ss2(nit+1) = nits_bri1_ss2(nit) + length(outs_n_bri1_ss2.gaps_dual);
+    % gaps_bri1_ss2(nit) = outs_n_bri1_ss2.gaps_dual(end);
+    ress_l2_bri1_ss2(nit) = norm_sp(phi0_n_bri1_ss2-phi0)/phi0_norm_sp;
 
-    err_n_eci = q_tru - q_n_eci;
-    err_n_l2_eci = norm_sp(err_n_eci)/q_tru_norm_sp;
-    errs_l2_eci(nit+1) = err_n_l2_eci;
+    err_n_bri1_ss2 = q_tru - q_n_bri1_ss2;
+    err_n_l2_bri1_ss2 = norm_sp(err_n_bri1_ss2)/q_tru_norm_sp;
+    errs_l2_bri1_ss2(nit+1) = err_n_l2_bri1_ss2;
 
     % update index
-    q_nm1_eci = q_n_eci;
-    % rho_nm1_eci = rho_n_eci;
-    err_nm1_eci = err_n_eci;
+    q_nm1_bri1_ss2 = q_n_bri1_ss2;
+    % rho_nm1_bri1_ss2 = rho_n_bri1_ss2;
+    err_nm1_bri1_ss2 = err_n_bri1_ss2;
 
-    q_hist_eci(:,nit) = q_n_eci;
+    q_hist_bri1_ss2(:,nit) = q_n_bri1_ss2;
     
-    if ress_l2_eci(nit) < tol
+    if ress_l2_bri1_ss2(nit) < tol
         flag_cvg = true;
-        q_hist_eci = q_hist_eci(:,1:nit);
-        nits_eci = nits_eci(1:nit+1);
-        gaps_eci = gaps_eci(1:nit);
-        ress_l2_eci = ress_l2_eci(1:nit);
-        errs_l2_eci = errs_l2_eci(1:nit+1);
-        disp(['ECI converges at ',num2str(nit),'-th iteration'])
+        q_hist_bri1_ss2 = q_hist_bri1_ss2(:,1:nit);
+        nits_bri1_ss2 = nits_bri1_ss2(1:nit+1);
+        gaps_bri1_ss2 = gaps_bri1_ss2(1:nit);
+        ress_l2_bri1_ss2 = ress_l2_bri1_ss2(1:nit);
+        errs_l2_bri1_ss2 = errs_l2_bri1_ss2(1:nit+1);
+        disp(['BRI1 converges at ',num2str(nit),'-th iteration'])
         break
     end
 
 end
-
 if ~flag_cvg
-    disp(['ECI finishes at ',num2str(nit),'-th iteration'])
+    disp(['BRI1 finishes at ',num2str(nit),'-th iteration'])
 end
 
 %% inverse best response iteration (BRI, nit = 1)
 flag_cvg = false;
 
 opts.Nit = 1;
+opts.step = @(nit) 0.5;
 if isfield(opts,'rho_num')opts = rmfield(opts,'rho_num'); end
 if isfield(opts,'v_num')opts = rmfield(opts,'v_num'); end
 
 Nit = 100;
-q_nm1_bri1 = q_init;
-% rho_nm1_bri1 = rho_init;
+q_nm1_bri1_ss5 = q_init;
+% rho_nm1_bri1_ss5 = rho_init;
 
-q_hist_bri1 = zeros(nxp,Nit);
-nits_bri1 = zeros(Nit+1,1);
-gaps_bri1 = zeros(Nit,1);
-errs_l2_bri1 = zeros(Nit+1,1);
-ress_l2_bri1 = zeros(Nit,1);
+q_hist_bri1_ss5 = zeros(nxp,Nit);
+nits_bri1_ss5 = zeros(Nit+1,1);
+gaps_bri1_ss5 = zeros(Nit,1);
+errs_l2_bri1_ss5 = zeros(Nit+1,1);
+ress_l2_bri1_ss5 = zeros(Nit,1);
 
-err_nm1_bri1 = q_tru - q_nm1_bri1;
-err_nm1_l2_bri1 = norm_sp(err_nm1_bri1)/q_tru_norm_sp;
-errs_l2_bri1(1) = err_nm1_l2_bri1;
+err_nm1_bri1_ss5 = q_tru - q_nm1_bri1_ss5;
+err_nm1_l2_bri1_ss5 = norm_sp(err_nm1_bri1_ss5)/q_tru_norm_sp;
+errs_l2_bri1_ss5(1) = err_nm1_l2_bri1_ss5;
 
 disp('BRI1 iter 0')
-disp(['  initial: q rel err = ',num2str(err_nm1_l2_bri1)])
+disp(['  initial: q rel err = ',num2str(err_nm1_l2_bri1_ss5)])
 
 for nit = 1:Nit
     % update rho, phi through ficplay
-    f_f = @(x,t,rho) q_nm1_bri1 + f_frho(x,t,rho);
-    [rho_n_bri1,phi_n_bri1,outs_n_bri1] ...
+    f_f = @(x,t,rho) q_nm1_bri1_ss5 + f_frho(x,t,rho);
+    [rho_n_bri1_ss5,phi_n_bri1_ss5,outs_n_bri1_ss5] ...
     = ficplay1d_lf(vis,gamma,f_f,f_g,f_rho0,opts);
 
-    opts.rho_num = rho_n_bri1;
-    opts.v_num = outs_n_bri1.v_num;
+    opts.rho_num = rho_n_bri1_ss5;
+    opts.v_num = outs_n_bri1_ss5.v_num;
 
-    phi0_n_bri1 = phi_n_bri1(:,1);
-    gdphi_n_bri1 = op_grd(phi_n_bri1);
-    term0_phi_n_bri1 = -vis*op_lap(phi0_n_bri1) + func_H(gdphi_n_bri1(:,1)) ...
-                  + sum(phi0_n_bri1)*cst_int;
+    phi0_n_bri1_ss5 = phi_n_bri1_ss5(:,1);
+    gdphi_n_bri1_ss5 = op_grd(phi_n_bri1_ss5);
+    term0_phi_n_bri1_ss5 = -vis*op_lap(phi0_n_bri1_ss5) + func_H(gdphi_n_bri1_ss5(:,1)) ...
+                  + sum(phi0_n_bri1_ss5)*cst_int;
 
     % update q    
-    res_phi_bri1 = term0_phi - term0_phi_n_bri1;
-    q_n_bri1 = q_nm1_bri1 + res_phi_bri1;
+    res_phi_bri1_ss5 = term0_phi - term0_phi_n_bri1_ss5;
+    q_n_bri1_ss5 = q_nm1_bri1_ss5 + res_phi_bri1_ss5;
 
     % record residue, error, number of iteration in ficplay
-    nits_bri1(nit+1) = nits_bri1(nit) + length(outs_n_bri1.gaps_dual);
-    gaps_bri1(nit) = outs_n_bri1.gaps_dual(end);
-    ress_l2_bri1(nit) = norm_sp(phi0_n_bri1-phi0)/phi0_norm_sp;
+    nits_bri1_ss5(nit+1) = nits_bri1_ss5(nit) + length(outs_n_bri1_ss5.gaps_dual);
+    gaps_bri1_ss5(nit) = outs_n_bri1_ss5.gaps_dual(end);
+    ress_l2_bri1_ss5(nit) = norm_sp(phi0_n_bri1_ss5-phi0)/phi0_norm_sp;
 
-    err_n_bri1 = q_tru - q_n_bri1;
-    err_n_l2_bri1 = norm_sp(err_n_bri1)/q_tru_norm_sp;
-    errs_l2_bri1(nit+1) = err_n_l2_bri1;
+    err_n_bri1_ss5 = q_tru - q_n_bri1_ss5;
+    err_n_l2_bri1_ss5 = norm_sp(err_n_bri1_ss5)/q_tru_norm_sp;
+    errs_l2_bri1_ss5(nit+1) = err_n_l2_bri1_ss5;
 
     % update index
-    q_nm1_bri1 = q_n_bri1;
-    % rho_nm1_bri1 = rho_n_bri1;
-    err_nm1_bri1 = err_n_bri1;
+    q_nm1_bri1_ss5 = q_n_bri1_ss5;
+    % rho_nm1_bri1_ss5 = rho_n_bri1_ss5;
+    err_nm1_bri1_ss5 = err_n_bri1_ss5;
 
-    q_hist_bri1(:,nit) = q_n_bri1;
+    q_hist_bri1_ss5(:,nit) = q_n_bri1_ss5;
     
-    if ress_l2_bri1(nit) < tol
+    if ress_l2_bri1_ss5(nit) < tol
         flag_cvg = true;
-        q_hist_bri1 = q_hist_bri1(:,1:nit);
-        nits_bri1 = nits_bri1(1:nit+1);
-        gaps_bri1 = gaps_bri1(1:nit);
-        ress_l2_bri1 = ress_l2_bri1(1:nit);
-        errs_l2_bri1 = errs_l2_bri1(1:nit+1);
+        q_hist_bri1_ss5 = q_hist_bri1_ss5(:,1:nit);
+        nits_bri1_ss5 = nits_bri1_ss5(1:nit+1);
+        gaps_bri1_ss5 = gaps_bri1_ss5(1:nit);
+        ress_l2_bri1_ss5 = ress_l2_bri1_ss5(1:nit);
+        errs_l2_bri1_ss5 = errs_l2_bri1_ss5(1:nit+1);
         disp(['BRI1 converges at ',num2str(nit),'-th iteration'])
         break
     end
@@ -262,6 +338,7 @@ end
 %% inverse best response iteration (BRI, nit = 5)
 flag_cvg = false;
 opts.Nit = 5;
+opts.step = @(nit) 0.5;
 if isfield(opts,'rho_num')opts = rmfield(opts,'rho_num'); end
 if isfield(opts,'v_num')opts = rmfield(opts,'v_num'); end
 
@@ -343,32 +420,39 @@ close all
 % linestyle '-', '--', ':', '-.'
 % color "#0072BD" (blue), 	"#D95319" (orange), "#EDB120" (yellow)
 % "#7E2F8E" (purple), "#77AC30" (green), 	"#A2142F" (dark red)
-width = 7; height = 6;
-color_bri1 = "#0072BD"; marker_bri1 = '+'; line_bri1 = '-.';
+width = 8; height = 6; fontsize = 12;
+color_bri1_ss5 = "#0072BD"; marker_bri1_ss5 = '+'; line_bri1_ss5 = '-.';
+color_bri1_ss2 = "#EDB120"; marker_bri1_ss2 = '*'; line_bri1_ss2 = ':';
 color_bri5 = "#D95319"; marker_bri5 = 'o'; line_bri5 = '--';
-color_eci  = "#EDB120"; marker_eci  = 'x'; line_eci  = ':';
-color_ref1 = "#7E2F8E"; 
-color_ref2 = "#77AC30"; 
+color_eci  = "#77AC30"; marker_eci  = 'x'; line_eci  = '-';
+% color_ref1 = "#7E2F8E"; 
+% color_ref2 = "#77AC30"; 
 
-fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
-set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
+% fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
+% set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
+% nexttile
+% plot(xgrid,q_tru,'Color',color_ref1,'DisplayName','true',...
+%     'LineWidth',linewidth);hold on
+% % plot(xgrid,q_init,'Color',color_ref2,'DisplayName','initial',...
+% %     'LineWidth',2*linewidth);
+% xlabel('$x$',Interpreter='latex')
+% ylabel('$q(x)$',Interpreter='latex')
+% legend(Location='north')
+% grid on
+% % exportgraphics(fig,['results/',filename,'_obs.eps'],...
+% %                'BackgroundColor','none');
+
+fig=tiledlayout(2,2,'TileSpacing','Compact','Padding','Compact');
+set(gcf,'unit','centimeters','Position',[7 7 14 5]);% >,^,
 nexttile
-plot(xgrid,q_tru,'Color',color_ref1,'DisplayName','true',...
+plot(xgrid,q_n_bri1_ss2-q_tru,...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
     'LineWidth',linewidth);hold on
-plot(xgrid,q_init,'Color',color_ref2,'DisplayName','initial',...
-    'LineWidth',2*linewidth);
-xlabel('x')
-ylabel('$q(x)$',Interpreter='latex')
-legend(Location='north')
-exportgraphics(fig,['results/',filename,'_obs.eps'],...
-               'BackgroundColor','none');
-
-fig=tiledlayout(3,1,'TileSpacing','Compact','Padding','Compact');
-set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-plot(xgrid,q_n_bri1-q_tru,...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+plot(xgrid,q_n_bri1_ss5-q_tru,...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 nexttile
 plot(xgrid,q_n_bri5-q_tru,...
@@ -380,18 +464,21 @@ plot(xgrid,q_n_eci-q_tru,...
     'Color',color_eci,...%'Marker',marker_eci,...
     'LineStyle',line_eci,'DisplayName','ECI',...
     'LineWidth',linewidth);
-xlabel(fig, 'x')
+xlabel(fig, '$x$',Interpreter='latex')
 ylabel(fig, '$\hat{q}(x) - q(x)$',Interpreter='latex')
 exportgraphics(fig,['results/',filename,'_obserr.eps'],...
                'BackgroundColor','none');
 
-
 fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
 set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-semilogy(nits_bri1,errs_l2_bri1,...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+semilogy(nits_bri1_ss2,errs_l2_bri1_ss2,...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
+    'LineWidth',linewidth);hold on
+semilogy(nits_bri1_ss5,errs_l2_bri1_ss5,...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 semilogy(nits_bri5,errs_l2_bri5,...
     'Color',color_bri5,...%'Marker',marker_bri5,...
@@ -402,17 +489,22 @@ semilogy(nits_eci,errs_l2_eci,...
     'LineStyle',line_eci,'DisplayName','ECI',...
     'LineWidth',linewidth);
 xlabel('number of HJB/FP solved')
-ylabel('environment rel. err.')
+ylabel('$q$ rel. err.',Interpreter='latex',FontSize=fontsize)
 legend
+grid on
 exportgraphics(fig,['results/',filename,'_relerr_vsnbr.eps'],...
                'BackgroundColor','none');
 
 fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
 set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-semilogy(errs_l2_bri1,...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+semilogy(errs_l2_bri1_ss2,...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
+    'LineWidth',linewidth);hold on
+semilogy(errs_l2_bri1_ss5,...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 semilogy(errs_l2_bri5,...
     'Color',color_bri5,...%'Marker',marker_bri5,...
@@ -423,17 +515,22 @@ semilogy(errs_l2_eci,...
     'LineStyle',line_eci,'DisplayName','ECI',...
     'LineWidth',linewidth);
 xlabel('number of outer loop')
-ylabel('environment rel. err.')
+ylabel('$q$ rel. err.',Interpreter='latex',FontSize=fontsize)
 legend
+grid on
 exportgraphics(fig,['results/',filename,'_relerr.eps'],...
                'BackgroundColor','none');
 
 fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
 set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-semilogy(nits_bri1(2:end),ress_l2_bri1,...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+semilogy(nits_bri1_ss2(2:end),ress_l2_bri1_ss2,...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
+    'LineWidth',linewidth);hold on
+semilogy(nits_bri1_ss5(2:end),ress_l2_bri1_ss5,...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 semilogy(nits_bri5(2:end),ress_l2_bri5,...
     'Color',color_bri5,...%'Marker',marker_bri5,...
@@ -444,17 +541,22 @@ semilogy(nits_eci(2:end),ress_l2_eci,...
     'LineStyle',line_eci,'DisplayName','ECI',...
     'LineWidth',linewidth);
 xlabel('number of HJB/FP solved')
-ylabel('measurement rel. err.')
+ylabel('$\phi_0$ rel. err.',Interpreter='latex',FontSize=fontsize)
 legend()
+grid on
 exportgraphics(fig,['results/',filename,'_res_vsnbr.eps'],...
                'BackgroundColor','none');
 
 fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
 set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-semilogy(ress_l2_bri1,...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+semilogy(ress_l2_bri1_ss2,...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
+    'LineWidth',linewidth);hold on
+semilogy(ress_l2_bri1_ss5,...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 semilogy(ress_l2_bri5,...
     'Color',color_bri5,...%'Marker',marker_bri5,...
@@ -465,17 +567,22 @@ semilogy(ress_l2_eci,...
     'LineStyle',line_eci,'DisplayName','ECI',...
     'LineWidth',linewidth);
 xlabel('number of outer loop')
-ylabel('measurement rel. err.')
+ylabel('$\phi_0$ rel. err.',Interpreter='latex',FontSize=fontsize)
 legend()
+grid on
 exportgraphics(fig,['results/',filename,'_res.eps'],...
                'BackgroundColor','none');
 
 fig=tiledlayout(1,1,'TileSpacing','Compact','Padding','Compact');
 set(gcf,'unit','centimeters','Position',[7 7 width height]);% >,^,
 nexttile
-semilogy(abs(gaps_bri1),...
-    'Color',color_bri1,...%'Marker',marker_bri1,...
-    'LineStyle',line_bri1,'DisplayName','BRI1',...
+semilogy(abs(gaps_bri1_ss2),...
+    'Color',color_bri1_ss2,...%'Marker',marker_bri1_ss2,...
+    'LineStyle',line_bri1_ss2,'DisplayName','BRI1(0.2)',...
+    'LineWidth',linewidth);hold on
+semilogy(abs(gaps_bri1_ss5),...
+    'Color',color_bri1_ss5,...%'Marker',marker_bri1_ss5,...
+    'LineStyle',line_bri1_ss5,'DisplayName','BRI1(0.5)',...
     'LineWidth',linewidth);hold on
 semilogy(abs(gaps_bri5),...
     'Color',color_bri5,...%'Marker',marker_bri5,...
@@ -488,5 +595,6 @@ semilogy(abs(gaps_eci),...
 xlabel('number of outer loop')
 ylabel('forward residue')
 legend
+grid on
 exportgraphics(fig,['results/',filename,'_gapsdual.eps'],...
                'BackgroundColor','none');
